@@ -14,6 +14,7 @@ import (
 )
 
 type queue struct {
+	dir  string
 	name string
 	seen bool
 	cd   bool
@@ -34,7 +35,8 @@ func walkiter(s *queue, walkFn filepath.WalkFunc) (haderror error) {
 				err := os.Chdir("..")
 				if err != nil {
 					cwd, err2 := os.Getwd()
-					return fmt.Errorf("can't dotdot (..); : %s from %s: %v (getwd error: %v)", s.name, cwd, err, err2)
+					return fmt.Errorf("can't dotdot (..); : %s from %s: %v (getwd error: %v)",
+						filepath.Join(s.dir, s.name), cwd, err, err2)
 				}
 			}
 			s = s.next
@@ -42,9 +44,9 @@ func walkiter(s *queue, walkFn filepath.WalkFunc) (haderror error) {
 		}
 		s.seen = true
 
-		ourname := s.name
+		ourname := filepath.Join(s.dir, s.name)
 
-		info, err := lstat(filepath.Base(ourname))
+		info, err := lstat(s.name)
 		if err != nil {
 			haderror = walkFn(ourname, info, err)
 			continue
@@ -61,7 +63,7 @@ func walkiter(s *queue, walkFn filepath.WalkFunc) (haderror error) {
 
 		// if a directory, chdir and list it
 		if info.IsDir() {
-			err := os.Chdir(filepath.Base(ourname))
+			err := os.Chdir(s.name)
 			if err != nil {
 				haderror = walkFn(ourname, info, err)
 				continue
@@ -79,7 +81,8 @@ func walkiter(s *queue, walkFn filepath.WalkFunc) (haderror error) {
 			file.Close()
 			for i := len(names) - 1; i >= 0; i-- {
 				ns := new(queue)
-				ns.name = filepath.Join(ourname, names[i])
+				ns.dir = ourname
+				ns.name = names[i]
 				ns.next = s
 				s = ns
 			}
