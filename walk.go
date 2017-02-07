@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"syscall"
 )
 
 type queue struct {
@@ -96,11 +97,12 @@ func walkiter(s *queue, walkFn filepath.WalkFunc) (haderror error) {
 // paths longer than PATH_MAX (1024 on OSX) would still be reachable.
 func Walk(root string, walkFn filepath.WalkFunc) error {
 	root = path.Clean(root)
-	dir, err := os.Getwd()
+	dir, err := os.Open(".")
 	if err != nil {
 		return err // wouldn't want to leave caller in an unknown dir
 	}
-	defer os.Chdir(dir)
+	defer syscall.Fchdir(int(dir.Fd()))
+	defer dir.Close()
 
 	err = os.Chdir(filepath.Dir(root))
 	if err != nil {
