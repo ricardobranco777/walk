@@ -79,10 +79,10 @@ func walkiter(s *queue, walkFn filepath.WalkFunc) (haderror error) {
 				haderror = walkFn(ourname, info, err)
 			}
 			file.Close()
-			for i := len(names) - 1; i >= 0; i-- {
+			for _, name := range names {
 				ns := new(queue)
 				ns.dir = ourname
-				ns.name = names[i]
+				ns.name = name
 				ns.next = s
 				s = ns
 			}
