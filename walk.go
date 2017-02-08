@@ -11,7 +11,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"syscall"
 )
 
@@ -98,23 +97,15 @@ func walkiter(s *queue, walkFn filepath.WalkFunc) (haderror error) {
 // paths longer than PATH_MAX (1024 on OSX) would still be reachable.
 func Walk(root string, walkFn filepath.WalkFunc) error {
 	root = path.Clean(root)
-	if runtime.GOOS == "windows" {
-		dir, err := os.Getwd()
-		if err != nil {
-			return err // wouldn't want to leave caller in an unknown dir
-		}
-		defer os.Chdir(dir)
-	} else {
-		dir, err := os.Open(".")
-		if err != nil {
-			return err // wouldn't want to leave caller in an unknown dir
-		}
-		syscall.Syscall(syscall.SYS_FCNTL, dir.Fd(), syscall.F_SETFD, syscall.FD_CLOEXEC)
-		defer syscall.Fchdir(int(dir.Fd()))
-		defer dir.Close()
+	dir, err := os.Open(".")
+	if err != nil {
+		return err // wouldn't want to leave caller in an unknown dir
 	}
+	syscall.Syscall(syscall.SYS_FCNTL, dir.Fd(), syscall.F_SETFD, syscall.FD_CLOEXEC)
+	defer syscall.Fchdir(int(dir.Fd()))
+	defer dir.Close()
 
-	err := os.Chdir(filepath.Dir(root))
+	err = os.Chdir(filepath.Dir(root))
 	if err != nil {
 		return walkFn(root, nil, err)
 	}
