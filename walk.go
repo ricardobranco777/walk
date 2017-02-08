@@ -101,7 +101,7 @@ func Walk(root string, walkFn filepath.WalkFunc) error {
 	if err != nil {
 		return err // wouldn't want to leave caller in an unknown dir
 	}
-	syscall.Syscall(syscall.SYS_FCNTL, dir.Fd(), syscall.F_SETFD, syscall.FD_CLOEXEC)
+	syscall.CloseOnExec(int(dir.Fd()))
 	defer syscall.Fchdir(int(dir.Fd()))
 	defer dir.Close()
 
